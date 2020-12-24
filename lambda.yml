@@ -54,16 +54,8 @@ Resources:
     Type: "AWS::ApiGatewayV2::Api"
     Properties:
       Name: "registration-api"
-      Description: "My API"
+      Description: "Okta registration API"
       ProtocolType: "HTTP"
-      CorsConfiguration: 
-        AllowHeaders: 
-          - "Content-Type"
-        AllowMethods: 
-          - "OPTIONS"
-          - "POST"
-        AllowOrigins: 
-          - !Ref FrontEndDomain
 
   lambdaIntegration:
     Type: 'AWS::ApiGatewayV2::Integration'
@@ -75,24 +67,37 @@ Resources:
       PayloadFormatVersion: '2.0'
 
 
-  registerRoute:
+  registerPost:
     Type: 'AWS::ApiGatewayV2::Route'
     DependsOn:
       - lambdaCreateUser
     Properties:
       ApiId: !Ref apiGateway
-      RouteKey: 'ANY /register'
+      RouteKey: 'POST /register'
       AuthorizationType: NONE
       Target: !Join
         - /
         - - integrations
           - !Ref lambdaIntegration
 
-  corsStage:
+    registerOptions:
+    Type: 'AWS::ApiGatewayV2::Route'
+    DependsOn:
+      - lambdaCreateUser
+    Properties:
+      ApiId: !Ref apiGateway
+      RouteKey: 'OPTIONS /register'
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref lambdaIntegration
+
+  defaultStage:
     Type: 'AWS::ApiGatewayV2::Stage'
     Properties:
       ApiId: !Ref apiGateway
-      StageName: 'cors'
+      StageName: 'default'
       AutoDeploy: true
   
 Outputs:
@@ -104,4 +109,4 @@ Outputs:
         - !Ref apiGateway
         - '.execute-api.'
         - !Ref 'AWS::Region'
-        - '.amazonaws.com/Prod'
+        - '.amazonaws.com/default/register'
