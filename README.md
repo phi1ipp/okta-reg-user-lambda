@@ -15,4 +15,4 @@ An example of AWS lambda designed to create users by API calls from SPA
 6. Click "Next" and "Next" again to Review step
 7. Check all 3 checkboxes at the bottom and click "Create Stack"
 8. Wait till stack is created and you see status "Create Complete"
-9. After that select tab "Output" and copy API URL, which you need to use in your front-end application
+9. After that select tab "Outputs" and copy API URL, which you need to use in your front-end application
