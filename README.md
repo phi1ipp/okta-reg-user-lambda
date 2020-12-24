@@ -7,7 +7,7 @@ An example of AWS lambda designed to create users by API calls from SPA
 3. Select `lambda.yml` from this repository, then "Next"
 4. Give stack a name (okta-registration)
 5. Provide parameters for the stack
-  - FrontEndDomain - URL where your web-application is hosted, it's required to create CORS policy for API GW
+  - FrontEndDomain - URL where your web-application is hosted, it's required to provide CORS headers
   - LambdaBucket - S3 bucket name where you uploaded `function.zip`
   - LambdaKey - S3 key for `function.zip`
   - OktaOrgUrl - URL for your Okta organization (https://xxxxx.okta.com)
