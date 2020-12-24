@@ -19,7 +19,7 @@ Parameters:
     Default: https://your.application.url
 
 Resources:
-  createLambdaRole:
+  role:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
@@ -31,9 +31,9 @@ Resources:
               Service:
               - lambda.amazonaws.com
             Action: "sts:AssumeRole"
-      Path: "/"        
+      Path: "/" 
 
-  lambdaCreateUser:
+  lambda:
     Type: 'AWS::Lambda::Function'
     Properties:
       Handler: index.handler
@@ -44,11 +44,19 @@ Resources:
         S3Key: !Ref LambdaKey
       MemorySize: 128
       Timeout: 3
-      Role: !GetAtt createLambdaRole.Arn
+      Role: !GetAtt role.Arn
       Environment:
         Variables: 
           ORG_URL: !Ref OktaOrgUrl
           TOKEN: !Ref OktaApiToken
+          CORS_DOMAIN: !Ref FrontEndDomain
+
+  permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt lambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: 'apigateway.amazonaws.com'
 
   apiGateway:
     Type: "AWS::ApiGatewayV2::Api"
@@ -57,20 +65,17 @@ Resources:
       Description: "Okta registration API"
       ProtocolType: "HTTP"
 
-  lambdaIntegration:
+  integration:
     Type: 'AWS::ApiGatewayV2::Integration'
     Properties:
       ApiId: !Ref apiGateway
       Description: 'Lambda invocation for Okta user creation'
       IntegrationType: 'AWS_PROXY'
-      IntegrationUri: !GetAtt lambdaCreateUser.Arn
+      IntegrationUri: !GetAtt lambda.Arn
       PayloadFormatVersion: '2.0'
 
-
-  registerPost:
+  routePost:
     Type: 'AWS::ApiGatewayV2::Route'
-    DependsOn:
-      - lambdaCreateUser
     Properties:
       ApiId: !Ref apiGateway
       RouteKey: 'POST /register'
@@ -78,12 +83,10 @@ Resources:
       Target: !Join
         - /
         - - integrations
-          - !Ref lambdaIntegration
+          - !Ref integration
 
-    registerOptions:
+  routeOptions:
     Type: 'AWS::ApiGatewayV2::Route'
-    DependsOn:
-      - lambdaCreateUser
     Properties:
       ApiId: !Ref apiGateway
       RouteKey: 'OPTIONS /register'
@@ -91,9 +94,9 @@ Resources:
       Target: !Join
         - /
         - - integrations
-          - !Ref lambdaIntegration
+          - !Ref integration
 
-  defaultStage:
+  stageDefault:
     Type: 'AWS::ApiGatewayV2::Stage'
     Properties:
       ApiId: !Ref apiGateway
