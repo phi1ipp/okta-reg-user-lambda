@@ -1,6 +1,6 @@
 # okta-reg-user-lambda
 
-An example of AWS lambda designed to create users by API calls from SPA
+An example of AWS lambda designed to create users in Okta by API calls from SPA
 
 1. Upload `functions.zip` to S3 bucket and record bucket name and key, you will need them while deploying the stack
 2. Open AWS CloudFormation Console https://console.aws.amazon.com/cloudformation/home and select "Create stack (with new resources)" from "Template ready" and choose to "Upload a template file"
