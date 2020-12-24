@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  OktaOrgUrl:
+    Type: String
+    Default: https://.okta.com
+  OktaApiToken:
+    Type: String
+    Default: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  LambdaBucket:
+    Type: String
+    Default: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  LambdaKey:  
+    Type: String
+    Default: xxxxxxx
+  FrontEndDomain:
+    Type: String
+    Default: https://your.application.url
+
+Resources:
+  createLambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -  
+            Effect: "Allow"
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"        
+
+  lambdaCreateUser:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Description: ''
+      Code: 
+        S3Bucket: !Ref LambdaBucket
+        S3Key: !Ref LambdaKey
+      MemorySize: 128
+      Timeout: 3
+      Role: !GetAtt createLambdaRole.Arn
+      Environment:
+        Variables: 
+          ORG_URL: !Ref OktaOrgUrl
+          TOKEN: !Ref OktaApiToken
+
+  apiGateway:
+    Type: "AWS::ApiGatewayV2::Api"
+    Properties:
+      Name: "registration-api"
+      Description: "My API"
+      ProtocolType: "HTTP"
+      CorsConfiguration: 
+        AllowHeaders: 
+          - "Content-Type"
+        AllowMethods: 
+          - "OPTIONS"
+          - "POST"
+        AllowOrigins: 
+          - !Ref FrontEndDomain
+
+  lambdaIntegration:
+    Type: 'AWS::ApiGatewayV2::Integration'
+    Properties:
+      ApiId: !Ref apiGateway
+      Description: 'Lambda invocation for Okta user creation'
+      IntegrationType: 'AWS_PROXY'
+      IntegrationUri: !GetAtt lambdaCreateUser.Arn
+      PayloadFormatVersion: '2.0'
+
+
+  registerRoute:
+    Type: 'AWS::ApiGatewayV2::Route'
+    DependsOn:
+      - lambdaCreateUser
+    Properties:
+      ApiId: !Ref apiGateway
+      RouteKey: 'ANY /register'
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref lambdaIntegration
+
+  corsStage:
+    Type: 'AWS::ApiGatewayV2::Stage'
+    Properties:
+      ApiId: !Ref apiGateway
+      StageName: 'cors'
+      AutoDeploy: true
+  
+Outputs:
+  ApiUrl:
+    Description: URL of your API endpoint
+    Value: !Join
+      - ''
+      - - https://
+        - !Ref apiGateway
+        - '.execute-api.'
+        - !Ref 'AWS::Region'
+        - '.amazonaws.com/Prod'
